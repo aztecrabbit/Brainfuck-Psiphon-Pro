@@ -1,10 +1,13 @@
 # User
 *.stackdump
 
+authorizations.txt
 src/*/
 storage/*/*
 
 !.gitkeep
+!storage/psiphon/.database
+!storage/psiphon/.tunnel-core
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

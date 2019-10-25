@@ -1,5 +1,9 @@
+import os
 import time
 import json
+import shutil
+import platform
+import sysconfig
 import subprocess
 from .utils.utils import utils
 
@@ -14,6 +18,13 @@ class psiphon(object):
         self.libutils = utils(__file__)
         self.kuota_data = {'all': 0}
 
+        self.file_psiphon_tunnel_core = {
+            'linux-x86_64': '/data/psiphon-tunnel-core/linux-x86_64',
+            'linux-armv7l': '/data/psiphon-tunnel-core/linux-armv7l',
+            'linux-armv8l': '/data/psiphon-tunnel-core/linux-armv8l',
+            'linux-aarch64': '/data/psiphon-tunnel-core/linux-aarch64',
+        }
+
     def log(self, value, prefix='', color='[G1]', type=1):
         self.liblog.log(value, prefix=prefix, color=color, type=type)
 
@@ -26,15 +37,55 @@ class psiphon(object):
 
         return '{:.3f} {}'.format(bytes, suffixes[i])
 
+    def load(self):
+        for x in self.file_psiphon_tunnel_core:
+            x = self.libutils.real_path(f'/../storage/psiphon/{x}')
+            if os.path.exists(x):
+                os.remove(x)
+
+        system_machine = sysconfig.get_platform()
+        if system_machine in self.file_psiphon_tunnel_core:
+            self.psiphon_tunnel_core = self.libutils.real_path(f'/../storage/psiphon/{system_machine}')
+            shutil.copyfile(self.libutils.real_path(f'/../storage/psiphon/.tunnel-core/{system_machine}'), self.psiphon_tunnel_core)
+            if platform.system() == 'Linux':
+                os.system(f'chmod +x {self.psiphon_tunnel_core}')
+
+    def generate_config(self, port, inject_port, authorization):
+        config = {
+            "DataStoreDirectory": f"storage/psiphon/{port}",
+
+            "PropagationChannelId": "0000000000000000",
+            "SponsorId": "0000000000000000",
+
+            "UpstreamProxyURL": f"http://127.0.0.1:{inject_port}",
+            "EmitDiagnosticNotices": True,
+            "EmitBytesTransferred": True,
+
+            "DisableLocalHTTPProxy": True,
+            "LocalSocksProxyPort": port,
+            "TunnelPoolSize": self.tunnels,
+
+            "ConnectionWorkerPoolSize": self.tunnels_worker,
+            "Authorizations": [authorization],
+
+            "LimitTunnelProtocols": ["FRONTED-MEEK-HTTP-OSSH", "FRONTED-MEEK-OSSH"],
+            "EgressRegion": ""
+        }
+
+        if not os.path.exists(self.libutils.real_path(f'/../storage/psiphon/{port}/')):
+            os.makedirs(self.libutils.real_path(f'/../storage/psiphon/{port}/'))
+
+        shutil.copyfile(self.libutils.real_path(f'/../storage/psiphon/.database/psiphon.boltdb'), self.libutils.real_path(f'/../storage/psiphon/{port}/psiphon.boltdb'))
+
+        with open(self.libutils.real_path(f'/../storage/psiphon/{port}/config.json'), 'w', encoding='utf-8') as file:
+            json.dump(config, file, ensure_ascii=False, indent=2)
+
     def stop(self):
         self.loop = False
 
     def client(self, port):
         def log(value, color='[G1]', type=1):
             self.log(value, prefix=port, color=color, type=type)
-
-        psiphon_tunnel_core = self.libutils.real_path('/../storage/psiphon/psiphon-tunnel-core')
-        psiphon_config = self.libutils.real_path(f'/../storage/psiphon/{port}/config.json')
 
         time.sleep(1.000)
         log('Connecting')
@@ -45,7 +96,7 @@ class psiphon(object):
                 self.kuota_data[port] = {'all': 0}
                 connected = 0
 
-                process = subprocess.Popen(f'{psiphon_tunnel_core} -config {psiphon_config}'.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                process = subprocess.Popen(f"{self.psiphon_tunnel_core} -config {self.libutils.real_path(f'/../storage/psiphon/{port}/config.json')}".split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 for line in process.stdout:                    
                     line = json.loads(line.decode().strip() + '\r')
                     info = line['noticeType']
@@ -61,8 +112,9 @@ class psiphon(object):
                         connected += 1
                         self.kuota_data[port][line['data']['diagnosticID']] = 0
                         log(f"Connected ({line['data']['diagnosticID']})", color='[Y1]')
-                        if connected == self.tunnels:
+                        if ['127.0.0.1', port] not in self.proxyrotator.proxies:
                             self.proxyrotator.proxies.append(['127.0.0.1', port])
+                        if connected == self.tunnels:
                             log('Connected', color='[Y1]')
 
                     elif info == 'Alert':
@@ -88,38 +140,38 @@ class psiphon(object):
                                 '''
 
                         elif 'A connection attempt failed because the connected party did not properly respond after a period of time' in message or \
-                         'context canceled' in message or \
-                         'API request rejected' in message or \
-                         'RemoteAddr returns nil' in message or \
-                         'network is unreachable' in message or \
-                         'close tunnel ssh error' in message or \
-                         'tactics request failed' in message or \
-                         'unexpected status code:' in message or \
-                         'meek connection is closed' in message or \
-                         'psiphon.(*MeekConn).relay' in message or \
-                         'meek connection has closed' in message or \
-                         'response status: 403 Forbidden' in message or \
-                         'making proxy request: unexpected EOF' in message or \
-                         'tunnel.dialTunnel: dialConn is not a Closer' in message or \
-                         'psiphon.(*ServerContext).DoConnectedRequest' in message or \
-                         'No connection could be made because the target machine actively refused it.' in message or \
-                         'no such host' in message:
+                            'context canceled' in message or \
+                            'API request rejected' in message or \
+                            'RemoteAddr returns nil' in message or \
+                            'network is unreachable' in message or \
+                            'close tunnel ssh error' in message or \
+                            'tactics request failed' in message or \
+                            'unexpected status code:' in message or \
+                            'meek connection is closed' in message or \
+                            'psiphon.(*MeekConn).relay' in message or \
+                            'meek connection has closed' in message or \
+                            'response status: 403 Forbidden' in message or \
+                            'making proxy request: unexpected EOF' in message or \
+                            'tunnel.dialTunnel: dialConn is not a Closer' in message or \
+                            'psiphon.(*ServerContext).DoConnectedRequest' in message or \
+                            'No connection could be made because the target machine actively refused it.' in message or \
+                            'no such host' in message:
                             continue
 
                         elif 'controller shutdown due to component failure' in message or \
-                          'psiphon.(*ServerContext).DoStatusRequest' in message or \
-                          'psiphon.(*Tunnel).sendSshKeepAlive' in message or \
-                          'psiphon.(*MeekConn).readPayload' in message or \
-                          'psiphon.(*Tunnel).Activate' in message or \
-                          'underlying conn is closed' in message or \
-                          'duplicate tunnel:' in message or \
-                          'tunnel failed:' in message:
+                            'psiphon.(*ServerContext).DoStatusRequest' in message or \
+                            'psiphon.(*Tunnel).sendSshKeepAlive' in message or \
+                            'psiphon.(*MeekConn).readPayload' in message or \
+                            'psiphon.(*Tunnel).Activate' in message or \
+                            'underlying conn is closed' in message or \
+                            'duplicate tunnel:' in message or \
+                            'tunnel failed:' in message:
                             # ~
                             self.reconnecting_color = '[R1]'
                             break
 
                         elif 'controller shutdown due to component failure' in message or \
-                          'No address associated with hostname' in message:
+                            'No address associated with hostname' in message:
                             log(f"007:\n\n{line}\n", color='[R1]')
                             # self.reconnecting_color = '[R1]'
                             # break

@@ -1,8 +1,18 @@
+import os
 import sys
 import src
+import argparse
 import threading
 
 def main():
+    ''' argparse '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', help='increase output verbosity', dest='verbose', action='store_true')
+    parser.add_argument('-t', help='how many tunnels running', dest='tunnels', type=int)
+    parser.add_argument('-f', help='frontend domains, example: cdn.com,cdn.net:443', dest='frontend_domains', type=str)
+    parser.add_argument('-w', help='whitelist request, example: akamai.net,fastly.com:443', dest='whitelist_request', type=str)
+    arguments = parser.parse_args()
+
     ''' variables '''
     proxyrotator_host = str('0.0.0.0')
     proxyrotator_port = int('3080')
@@ -12,9 +22,14 @@ def main():
     ''' utils '''
     utils = src.utils(__file__)
 
+    ''' config files '''
+    if not os.path.exists(utils.real_path('/authorizations.txt')):
+        with open(utils.real_path('/authorizations.txt'), 'w') as file:
+            file.write('# write authorizations here\n\n\n')
+
     ''' log '''
     log = src.log()
-    log.type = 1
+    log.type = 1 if not arguments.verbose else 2
     log.prefix = 'INFO'
     log.value_prefix = "datetime.datetime.now().strftime('[%H:%M:%S]{clear} [P1]::{clear} {color}{prefix}{clear} [P1]::{clear}')"
 
@@ -45,16 +60,27 @@ def main():
     ''' psiphon '''
     psiphon = src.psiphon(inject_host, inject_port)
     psiphon.liblog = log
+    psiphon.authorizations = utils.xfilter(open(utils.real_path('/authorizations.txt')).readlines())
     psiphon.tunnels = 8
+    psiphon.tunnels_worker = 16
     psiphon.proxyrotator = proxyrotator
-    for i in range(1):
-        psiphon_client_port = proxyrotator_port + 1 + i
-        threading.Thread(target=psiphon.client, args=(psiphon_client_port, )).start()
+    psiphon.load()
+
+    if not len(psiphon.authorizations):
+        log.log('Authorizations.txt not set!\n', color='[R1]')
+        return
 
     try:
-        ''' inject '''
+        ''' psiphon tunnel core '''
+        for i in range(len(psiphon.authorizations)):
+            psiphon_client_port = proxyrotator_port + 1 + i
+            psiphon.generate_config(psiphon_client_port, inject_port, psiphon.authorizations[i])
+            threading.Thread(target=psiphon.client, args=(psiphon_client_port, )).start()
+
         log.log(f'Domain Fronting running on port {inject_port}', color='[G1]')
         log.log(f'Proxy Rotator running on port {proxyrotator_port}', color='[G1]')
+
+        ''' inject '''
         inject = src.inject((inject_host, inject_port), src.inject_handler)
         inject.rules = [
             {
@@ -69,11 +95,13 @@ def main():
         inject.serve_forever()
     except KeyboardInterrupt:
         inject.stop = True
-        with utils.lock:
+        with log.lock:
             psiphon.stop()
             redsocks.stop()
             log.keyboard_interrupt()
             proxyrotator.stop()
+    except PermissionError:
+        log.log('Access denied: config file not exported automaticly, please run as root!\n', color='[R1]')
     finally:
         pass
 
