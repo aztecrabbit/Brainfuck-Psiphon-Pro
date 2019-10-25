@@ -9,6 +9,6 @@ from .proxyrotator.proxyrotator import proxyrotator
 from .proxyrotator.proxyrotator import proxyrotator_handler
 
 utils(__file__).banner([
-    'Brainfuck Tunnel [Psiphon Pro Version. 1.3.191009]',
+    'Brainfuck Tunnel [Psiphon Pro Version. 1.3.191025]',
     '(c) 2019 Aztec Rabbit.',
 ])
