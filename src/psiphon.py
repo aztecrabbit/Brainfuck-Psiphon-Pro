@@ -22,6 +22,7 @@ class psiphon(object):
         self.system_platform = platform.system()
 
         self.file_psiphon_tunnel_core = {
+            'win32': '/../storage/psiphon/.tunnel-core/win-i386',
             'win-i386': '/../storage/psiphon/.tunnel-core/win-i386',
             'win-amd64': '/../storage/psiphon/.tunnel-core/win-amd64',
             'linux-x86_64': '/../storage/psiphon/.tunnel-core/linux-x86_64',
