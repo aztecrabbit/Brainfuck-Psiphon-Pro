@@ -113,7 +113,7 @@ class psiphon(object):
                         self.kuota_data[port]['all'] += sent + received
                         self.kuota_data[port][id] += sent + received
                         self.kuota_data['all'] += sent + received
-                        self.log_replace(f"{port} ({id}) ({self.size(self.kuota_data[port][id])}) ({self.size(self.kuota_data['all'])})")
+                        self.log_replace(f"{port} ({id}) ({self.size(self.kuota_data[port]['all'])}) ({self.size(self.kuota_data['all'])})")
 
                     elif info == 'ActiveTunnel':
                         if not line.get('data').get('diagnosticID'):
