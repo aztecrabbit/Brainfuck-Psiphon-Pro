@@ -18,11 +18,16 @@ class psiphon(object):
         self.libutils = utils(__file__)
         self.kuota_data = {'all': 0}
 
+        self.system_machine = sysconfig.get_platform()
+        self.system_platform = platform.system()
+
         self.file_psiphon_tunnel_core = {
-            'linux-x86_64': '/data/psiphon-tunnel-core/linux-x86_64',
-            'linux-armv7l': '/data/psiphon-tunnel-core/linux-armv7l',
-            'linux-armv8l': '/data/psiphon-tunnel-core/linux-armv8l',
-            'linux-aarch64': '/data/psiphon-tunnel-core/linux-aarch64',
+            'win-i386': '/../storage/psiphon/.tunnel-core/win-i386',
+            'win-amd64': '/../storage/psiphon/.tunnel-core/win-amd64',
+            'linux-x86_64': '/../storage/psiphon/.tunnel-core/linux-x86_64',
+            'linux-armv7l': '/../storage/psiphon/.tunnel-core/linux-armv7l',
+            'linux-armv8l': '/../storage/psiphon/.tunnel-core/linux-armv8l',
+            'linux-aarch64': '/../storage/psiphon/.tunnel-core/linux-aarch64',
         }
 
     def log(self, value, prefix='', color='[G1]', type=1):
@@ -38,16 +43,10 @@ class psiphon(object):
         return '{:.3f} {}'.format(bytes, suffixes[i])
 
     def load(self):
-        for x in self.file_psiphon_tunnel_core:
-            x = self.libutils.real_path(f'/../storage/psiphon/{x}')
-            if os.path.exists(x):
-                os.remove(x)
-
-        system_machine = sysconfig.get_platform()
-        if system_machine in self.file_psiphon_tunnel_core:
-            self.psiphon_tunnel_core = self.libutils.real_path(f'/../storage/psiphon/{system_machine}')
-            shutil.copyfile(self.libutils.real_path(f'/../storage/psiphon/.tunnel-core/{system_machine}'), self.psiphon_tunnel_core)
-            if platform.system() == 'Linux':
+        if self.system_machine in self.file_psiphon_tunnel_core:
+            self.psiphon_tunnel_core = self.libutils.real_path(f'/../storage/psiphon/psiphon-tunnel-core' + ('.exe' if self.system_platform == 'Windows' else ''))
+            shutil.copyfile(self.libutils.real_path(self.file_psiphon_tunnel_core[self.system_machine]), self.psiphon_tunnel_core)
+            if self.system_platform == 'Linux':
                 os.system(f'chmod +x {self.psiphon_tunnel_core}')
 
     def stop(self):
@@ -107,6 +106,9 @@ class psiphon(object):
                     info = line['noticeType']
 
                     if info == 'BytesTransferred':
+                        if not line.get('data').get('diagnosticID'):
+                            line['data']['diagnosticID'] = 'aztecrabbit'
+
                         id, sent, received = line['data']['diagnosticID'], line['data']['sent'], line['data']['received']
                         self.kuota_data[port]['all'] += sent + received
                         self.kuota_data[port][id] += sent + received
@@ -114,6 +116,9 @@ class psiphon(object):
                         self.log_replace(f"{port} ({id}) ({self.size(self.kuota_data[port][id])}) ({self.size(self.kuota_data['all'])})")
 
                     elif info == 'ActiveTunnel':
+                        if not line.get('data').get('diagnosticID'):
+                            line['data']['diagnosticID'] = 'aztecrabbit'
+
                         connected += 1
                         self.kuota_data[port][line['data']['diagnosticID']] = 0
                         log(f"Connected ({line['data']['diagnosticID']})", color='[Y1]')
@@ -194,6 +199,9 @@ class psiphon(object):
 
                 if ['127.0.0.1', port] in self.proxyrotator.proxies:
                     self.proxyrotator.proxies.remove(['127.0.0.1', port])
+
+                if self.system_platform == 'Windows':
+                    time.sleep(0.200)
 
                 if self.loop:
                     log(f"Reconnecting ({self.size(self.kuota_data[port]['all'])})")

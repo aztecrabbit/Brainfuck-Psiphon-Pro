@@ -60,21 +60,20 @@ def main():
     redsocks.redsocks_config = utils.real_path('/storage/redsocks/redsocks.conf')
     redsocks.start()
 
-    ''' psiphon '''
-    psiphon = src.psiphon(inject_host, inject_port)
-    psiphon.liblog = log
-    psiphon.authorizations = utils.xfilter(open(utils.real_path('/authorizations.txt')).readlines())
-    psiphon.tunnels = arguments.tunnels if arguments.tunnels else 8
-    psiphon.tunnels_worker = psiphon.tunnels * 2
-    psiphon.proxyrotator = proxyrotator
-    psiphon.load()
-
-    if not len(psiphon.authorizations):
-        log.log('Authorizations.txt not set!\n', color='[R1]')
-        return
-
     try:
-        ''' psiphon tunnel core '''
+        ''' psiphon '''
+        psiphon = src.psiphon(inject_host, inject_port)
+        psiphon.liblog = log
+        psiphon.authorizations = utils.xfilter(open(utils.real_path('/authorizations.txt')).readlines())
+        psiphon.tunnels = arguments.tunnels if arguments.tunnels else 8
+        psiphon.tunnels_worker = psiphon.tunnels * 2
+        psiphon.proxyrotator = proxyrotator
+        psiphon.load()
+
+        if not len(psiphon.authorizations):
+            log.log('Authorizations.txt not set!\n', color='[R1]')
+            return
+
         for i in range(len(psiphon.authorizations)):
             threading.Thread(target=psiphon.client, args=(proxyrotator_port + 1 + i, inject_port, psiphon.authorizations[i], )).start()
 
