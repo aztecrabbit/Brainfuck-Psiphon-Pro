@@ -50,6 +50,9 @@ class psiphon(object):
             if platform.system() == 'Linux':
                 os.system(f'chmod +x {self.psiphon_tunnel_core}')
 
+    def stop(self):
+        self.loop = False
+
     def generate_config(self, port, inject_port, authorization):
         config = {
             "DataStoreDirectory": f"storage/psiphon/{port}",
@@ -80,12 +83,14 @@ class psiphon(object):
         with open(self.libutils.real_path(f'/../storage/psiphon/{port}/config.json'), 'w', encoding='utf-8') as file:
             json.dump(config, file, ensure_ascii=False, indent=2)
 
-    def stop(self):
-        self.loop = False
-
-    def client(self, port):
+    def client(self, port, inject_port, authorization):
         def log(value, color='[G1]', type=1):
+            if not self.loop:
+                return
+
             self.log(value, prefix=port, color=color, type=type)
+
+        self.generate_config(port, inject_port, authorization)
 
         time.sleep(1.000)
         log('Connecting')

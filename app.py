@@ -5,6 +5,9 @@ import argparse
 import threading
 
 def main():
+    ''' utils '''
+    utils = src.utils(__file__)
+
     ''' argparse '''
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', help='increase output verbosity', dest='verbose', action='store_true')
@@ -13,14 +16,14 @@ def main():
     parser.add_argument('-w', help='whitelist request, example: akamai.net,fastly.com:443', dest='whitelist_request', type=str)
     arguments = parser.parse_args()
 
+    arguments.frontend_domains = utils.xfilter(arguments.frontend_domains.split(',')) if arguments.frontend_domains is not None else ['video.iflix.com', 'videocdn-2.iflix.com']
+    arguments.whitelist_request = utils.xfilter(arguments.whitelist_request.split(',')) if arguments.whitelist_request is not None else ['akamai.net']
+
     ''' variables '''
     proxyrotator_host = str('0.0.0.0')
     proxyrotator_port = int('3080')
     inject_host = str('0.0.0.0')
     inject_port = int('8989')
-
-    ''' utils '''
-    utils = src.utils(__file__)
 
     ''' config files '''
     if not os.path.exists(utils.real_path('/authorizations.txt')):
@@ -73,9 +76,7 @@ def main():
     try:
         ''' psiphon tunnel core '''
         for i in range(len(psiphon.authorizations)):
-            psiphon_client_port = proxyrotator_port + 1 + i
-            psiphon.generate_config(psiphon_client_port, inject_port, psiphon.authorizations[i])
-            threading.Thread(target=psiphon.client, args=(psiphon_client_port, )).start()
+            threading.Thread(target=psiphon.client, args=(proxyrotator_port + 1 + i, inject_port, psiphon.authorizations[i], )).start()
 
         log.log(f'Domain Fronting running on port {inject_port}', color='[G1]')
         log.log(f'Proxy Rotator running on port {proxyrotator_port}', color='[G1]')
@@ -84,9 +85,9 @@ def main():
         inject = src.inject((inject_host, inject_port), src.inject_handler)
         inject.rules = [
             {
-                'target-list': ['akamai.net:80'],
+                'target-list': arguments.whitelist_request,
                 'tunnel-type': '3',
-                'remote-proxies': ['video.iflix.com', 'videocdn-2.iflix.com'],
+                'remote-proxies': arguments.frontend_domains,
             },
         ]
         inject.liblog = log
