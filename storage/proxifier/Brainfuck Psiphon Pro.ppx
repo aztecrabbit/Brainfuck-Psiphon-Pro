@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ProxifierProfile version="101" platform="Windows" product_id="0" product_minver="310">
+  <Options>
+    <Resolve>
+      <AutoModeDetection enabled="true" />
+      <ViaProxy enabled="false">
+        <TryLocalDnsFirst enabled="false" />
+      </ViaProxy>
+      <ExclusionList>%ComputerName%; localhost; *.local</ExclusionList>
+    </Resolve>
+    <Encryption mode="basic" />
+    <HttpProxiesSupport enabled="false" />
+    <HandleDirectConnections enabled="false" />
+    <ConnectionLoopDetection enabled="false" />
+    <ProcessServices enabled="false" />
+    <ProcessOtherUsers enabled="false" />
+  </Options>
+  <ProxyList>
+    <Proxy id="100" type="SOCKS5">
+      <Address>127.0.0.1</Address>
+      <Port>3080</Port>
+      <Options>48</Options>
+      <Authentication enabled="true">
+        <Username>aztecrabbit</Username>
+        <Password>AAACmFG79QjLoH7cnb+BKETVocXu16dZvt55V2S0zgIEal0=</Password>
+      </Authentication>
+    </Proxy>
+  </ProxyList>
+  <ChainList />
+  <RuleList>
+    <Rule enabled="true">
+      <Name>Localhost</Name>
+      <Targets>localhost; 127.0.0.1; %ComputerName%</Targets>
+      <Action type="Direct" />
+    </Rule>
+    <Rule enabled="true">
+      <Name>Direct</Name>
+      <Applications>psiphon-tunnel-core.exe; python.exe; python3.exe; </Applications>
+      <Action type="Direct" />
+    </Rule>
+    <Rule enabled="true">
+      <Name>Block</Name>
+      <Applications>svchost.exe; </Applications>
+      <Action type="Block" />
+    </Rule>
+    <Rule enabled="true">
+      <Name>Default</Name>
+      <Action type="Proxy">100</Action>
+    </Rule>
+  </RuleList>
+</ProxifierProfile>

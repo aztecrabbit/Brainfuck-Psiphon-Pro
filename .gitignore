@@ -6,6 +6,7 @@ src/*/
 storage/*/*
 
 !.gitkeep
+!storage/proxifier/*
 !storage/psiphon/.database
 !storage/psiphon/.tunnel-core
 
