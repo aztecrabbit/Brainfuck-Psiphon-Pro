@@ -33,11 +33,11 @@ class xgit(object):
 
         return self
 
-    def clone(self, repo, path=''):
+    def clone(self, path, repo, folder_name):
         if not self.enabled:
             return
 
-        response = command(f'git clone {repo} {real_path(path)}')
+        response = command(f'cd {real_path(path)} && git clone {repo} {folder_name}')
         for line in response.stdout:
             line = line.decode().strip()
 
@@ -68,11 +68,11 @@ def main():
         log_tab('\n')
 
     elif sys.argv[1] == 'install':
-        git.clone('https://github.com/AztecRabbit/log', '/src/log')
-        git.clone('https://github.com/AztecRabbit/utils', '/src/utils')
-        git.clone('https://github.com/AztecRabbit/inejct', '/src/inject')
-        git.clone('https://github.com/AztecRabbit/redsocks', '/src/redsocks')
-        git.clone('https://github.com/AztecRabbit/proxyrotator', '/src/proxyrotator')
+        git.clone('/src', 'https://github.com/AztecRabbit/log', 'log')
+        git.clone('/src', 'https://github.com/AztecRabbit/utils', 'utils')
+        git.clone('/src', 'https://github.com/AztecRabbit/inject', 'inject')
+        git.clone('/src', 'https://github.com/AztecRabbit/redsocks', 'redsocks')
+        git.clone('/src', 'https://github.com/AztecRabbit/proxyrotator', 'proxyrotator')
 
     elif sys.argv[1] == 'update':
         git.pull('/src/log')

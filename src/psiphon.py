@@ -101,7 +101,7 @@ class psiphon(object):
                 self.kuota_data[port] = {'all': 0}
                 connected = 0
 
-                process = subprocess.Popen(f"{self.psiphon_tunnel_core} -config {self.libutils.real_path(f'/../storage/psiphon/{port}/config.json')}".split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                process = subprocess.Popen([self.psiphon_tunnel_core, '-config', self.libutils.real_path(f'/../storage/psiphon/{port}/config.json')], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 for line in process.stdout:                    
                     line = json.loads(line.decode().strip() + '\r')
                     info = line['noticeType']
@@ -202,7 +202,7 @@ class psiphon(object):
                     self.proxyrotator.proxies.remove(['127.0.0.1', port])
 
                 if self.system_platform == 'Windows':
-                    time.sleep(0.200)
+                    time.sleep(0.750)
 
                 if self.loop:
                     log(f"Reconnecting ({self.size(self.kuota_data[port]['all'])})")
