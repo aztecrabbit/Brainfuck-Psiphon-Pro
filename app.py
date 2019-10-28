@@ -16,6 +16,7 @@ def main():
     parser.add_argument('-w', help='whitelist request, example: akamai.net,fastly.com:443', dest='whitelist_request', type=str)
     arguments = parser.parse_args()
 
+    arguments.tunnels = arguments.tunnels if arguments.tunnels else 4
     arguments.frontend_domains = utils.xfilter(arguments.frontend_domains.split(',')) if arguments.frontend_domains is not None else ['video.iflix.com', 'videocdn-2.iflix.com']
     arguments.whitelist_request = utils.xfilter(arguments.whitelist_request.split(',')) if arguments.whitelist_request is not None else ['akamai.net']
 
@@ -65,7 +66,7 @@ def main():
         psiphon = src.psiphon(inject_host, inject_port)
         psiphon.liblog = log
         psiphon.authorizations = utils.xfilter(open(utils.real_path('/authorizations.txt')).readlines())
-        psiphon.tunnels = arguments.tunnels if arguments.tunnels else 8
+        psiphon.tunnels = arguments.tunnels
         psiphon.tunnels_worker = psiphon.tunnels * 2
         psiphon.proxyrotator = proxyrotator
         psiphon.load()
