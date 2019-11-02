@@ -68,19 +68,19 @@ def main():
         log_tab('\n')
 
     elif sys.argv[1] == 'install':
-        git.clone('/src', 'https://github.com/AztecRabbit/log', 'log')
-        git.clone('/src', 'https://github.com/AztecRabbit/utils', 'utils')
-        git.clone('/src', 'https://github.com/AztecRabbit/inject', 'inject')
-        git.clone('/src', 'https://github.com/AztecRabbit/redsocks', 'redsocks')
-        git.clone('/src', 'https://github.com/AztecRabbit/proxyrotator', 'proxyrotator')
+        git.clone('/src', 'https://github.com/aztecrabbit/log', 'log')
+        git.clone('/src', 'https://github.com/aztecrabbit/utils', 'utils')
+        git.clone('/src', 'https://github.com/aztecrabbit/inject', 'inject')
+        git.clone('/src', 'https://github.com/aztecrabbit/redsocks', 'redsocks')
+        git.clone('/src', 'https://github.com/aztecrabbit/proxyrotator', 'proxyrotator')
 
     elif sys.argv[1] == 'update':
+        git.pull()
         git.pull('/src/log')
         git.pull('/src/utils')
         git.pull('/src/inject')
         git.pull('/src/redsocks')
         git.pull('/src/proxyrotator')
-        git.pull()
 
 if __name__ == '__main__':
     main()
