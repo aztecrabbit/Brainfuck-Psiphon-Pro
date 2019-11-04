@@ -72,7 +72,7 @@ class psiphon(object):
             "Authorizations": [authorization],
 
             "LimitTunnelProtocols": ["FRONTED-MEEK-HTTP-OSSH", "FRONTED-MEEK-OSSH"],
-            "EgressRegion": ""
+            "EgressRegion": self.region,
         }
 
         if not os.path.exists(self.libutils.real_path(f'/../storage/psiphon/{port}/')):
