@@ -1,86 +1,91 @@
 import os
 import sys
+import shutil
 import subprocess
 
-def real_path(file_name):
-    return os.path.dirname(os.path.abspath(__file__)) + file_name
-
-def log_tab(value='', enter=False):
-    print('{}|   {}'.format('\n' if enter else '', value))
-
-def command(command, silent=False):
-    if not silent:
-        print(f'Executing: {command}\n')
-    
-    return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-class xgit(object):
+class _setup(object):
     def __init__(self):
-        super(xgit, self).__init__()
+        super(_setup, self).__init__()
 
         self.enabled = False
+        self.libraries = []
+
+    def real_path(self, file_name=''):
+        return os.path.dirname(os.path.abspath(__file__)) + file_name
+
+    def log(self, value='', tab='|   '):
+        print(tab + value)
 
     def load(self):
-        response = command('git --version', silent=True)
-        for line in response.stdout:
-            if line.decode().strip().startswith('git version'):
-                self.enabled = True
-            break
+        if shutil.which('git'):
+            self.enabled = True
+
+        self.libraries = open(self.real_path('/libraries.txt')).readlines()
+        self.libraries = [x.strip() for x in self.libraries if x]
 
         if not self.enabled:
-            log_tab('git not installed. please install git first!', enter=True)
-            log_tab('\n')
+            self.log(tab='')
+            self.log('git not installed. please install git first!')
+            self.log('\n', tab='|')
 
         return self
 
-    def clone(self, path, repo, folder_name):
+    def execute(self, command):
+        self.log(f'Executing: {command}' + '\n', tab='')
+
+        return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    def usage(self):
+        self.log(tab='')
+        self.log(f'Usage: python3 {sys.argv[0]} [install] [update]')
+        self.log('\n', tab='|')
+
+    def install(self):
         if not self.enabled:
             return
 
-        response = command(f'cd {real_path(path)} && git clone {repo} {folder_name}')
-        for line in response.stdout:
-            line = line.decode().strip()
+        for name in self.libraries:
+            response = self.execute(f"cd {self.real_path('/src')} && git clone https://github.com/aztecrabbit/{name}")
+            for line in response.stdout:
+                line = line.decode().strip()
 
-            if 'already exists and is not an empty directory.' in line:
-                log_tab('Already installed.')
-                break
+                if 'already exists and is not an empty directory.' in line:
+                    self.log('Already installed.')
+                    break
 
-            log_tab(line)
+                self.log(line)
 
-        log_tab('\n')
+            self.log('\n', tab='|')
 
-    def pull(self, path='', force=False):
+    def update(self, force=False):
         if not self.enabled:
             return
 
-        response = command(f'cd {real_path(path)} && git pull')
-        for line in response.stdout:
-            line = line.decode().strip()
-            log_tab(line)
+        path_list = []
+        path_list.append(self.real_path())
+        for path in self.libraries:
+            path_list.append(self.real_path('/src/' + path))
 
-        log_tab('\n')
+        for path in path_list:
+            response = self.execute(f'cd {path} && git pull')
+            for line in response.stdout:
+                line = line.decode().strip()
+
+                self.log(line)
+
+            self.log('\n', tab='|')
 
 def main():
-    git = xgit().load()
+    setup = _setup().load()
 
     if len(sys.argv) <= 1:
-        log_tab('Usage: python3 setup.py [install] [update]', enter=True)
-        log_tab('\n')
+        setup.usage()
 
     elif sys.argv[1] == 'install':
-        git.clone('/src', 'https://github.com/aztecrabbit/log', 'log')
-        git.clone('/src', 'https://github.com/aztecrabbit/utils', 'utils')
-        git.clone('/src', 'https://github.com/aztecrabbit/inject', 'inject')
-        git.clone('/src', 'https://github.com/aztecrabbit/redsocks', 'redsocks')
-        git.clone('/src', 'https://github.com/aztecrabbit/proxyrotator', 'proxyrotator')
+        setup.install()
 
     elif sys.argv[1] == 'update':
-        git.pull()
-        git.pull('/src/log')
-        git.pull('/src/utils')
-        git.pull('/src/inject')
-        git.pull('/src/redsocks')
-        git.pull('/src/proxyrotator')
+        setup.update()
 
 if __name__ == '__main__':
     main()
