@@ -96,12 +96,6 @@ def main():
         inject.liblog = log
         inject.libredsocks = redsocks
         inject.socket_server_timeout = 1
-        if arguments.frontend_domains == ['video.iflix.com', 'videocdn-2.iflix.com'] and arguments.whitelist_request == ['akamai.net']:
-            inject.rules.append({
-                'target-list': ['fastly.com'],
-                'tunnel-type': '3',
-                'remote-proxies': ['cdn.speedcurve.com'],
-            })
         inject.serve_forever()
     except KeyboardInterrupt:
         inject.stop = True
