@@ -9,18 +9,33 @@ def main():
     utils = src.utils(__file__)
 
     ''' argparse '''
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=52))
     parser.add_argument('-v', help='increase output verbosity', dest='verbose', action='store_true')
     parser.add_argument('-t', help='how many tunnels running', dest='tunnels', type=int)
     parser.add_argument('-r', help='region', dest='region', type=str)
     parser.add_argument('-f', help='frontend domains, example: cdn.com,cdn.net:443', dest='frontend_domains', type=str)
     parser.add_argument('-w', help='whitelist request, example: akamai.net,fastly.com:443', dest='whitelist_request', type=str)
-    arguments = parser.parse_args()
 
+    arguments = parser.parse_args()
     arguments.region = arguments.region.upper() if arguments.region else ''
     arguments.tunnels = arguments.tunnels if arguments.tunnels else 4
-    arguments.frontend_domains = utils.xfilter(arguments.frontend_domains.split(',')) if arguments.frontend_domains is not None else ['video.iflix.com', 'videocdn-2.iflix.com']
-    arguments.whitelist_request = utils.xfilter(arguments.whitelist_request.split(',')) if arguments.whitelist_request is not None else ['akamai.net']
+    arguments.frontend_domains = utils.xfilter(arguments.frontend_domains.split(',')) if arguments.frontend_domains is not None else None
+    arguments.whitelist_request = utils.xfilter(arguments.whitelist_request.split(',')) if arguments.whitelist_request is not None else None
+
+    if arguments.frontend_domains is None:
+        arguments.frontend_domains = [
+            'video.iflix.com',
+            'videocdn-2.iflix.com',
+        ]
+
+        for i in [1,2,3,6,7,8]:
+            arguments.frontend_domains.append(f"iflix-videocdn-p{i}.akamaized.net")
+
+    if arguments.whitelist_request is None:
+        arguments.whitelist_request = ['akamai.net']
+
+    arguments.frontend_domains.sort()
+    arguments.whitelist_request.sort()
 
     ''' variables '''
     proxyrotator_host = str('0.0.0.0')
