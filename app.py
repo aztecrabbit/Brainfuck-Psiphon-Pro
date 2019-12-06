@@ -85,7 +85,7 @@ def main():
         psiphon.authorizations = utils.xfilter(open(utils.real_path('/authorizations.txt')).readlines())
         psiphon.region = arguments.region
         psiphon.tunnels = arguments.tunnels
-        psiphon.tunnels_worker = psiphon.tunnels * 2
+        psiphon.tunnels_worker = 8 if arguments.tunnels <= 4 else arguments.tunnels + 4
         psiphon.proxyrotator = proxyrotator
         psiphon.load()
 
