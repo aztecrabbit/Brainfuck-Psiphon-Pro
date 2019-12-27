@@ -3,6 +3,7 @@ import sys
 import shutil
 import subprocess
 
+
 class _setup(object):
     def __init__(self):
         super(_setup, self).__init__()
@@ -75,6 +76,7 @@ class _setup(object):
 
             self.log('\n', tab='|')
 
+
 def main():
     setup = _setup().load()
 
@@ -86,6 +88,7 @@ def main():
 
     elif sys.argv[1] == 'update':
         setup.update()
+
 
 if __name__ == '__main__':
     main()
